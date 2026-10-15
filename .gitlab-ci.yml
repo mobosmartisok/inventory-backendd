@@ -1,0 +1,43 @@
+stages:
+  - build
+  - test
+  - deploy-demo
+  - release
+
+variables:
+  IMAGE_TAG: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+
+build:
+  stage: build
+  image: python:3.12-slim
+  script:
+    - pip install -r requirements.txt
+
+test:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - pip install -r requirements.txt
+    - pytest -q
+
+deploy-demo:
+  stage: deploy-demo
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t $IMAGE_TAG .
+    - echo "ایمیج دمو با تگ $IMAGE_TAG ساخته شد (استقرار واقعی خارج از محدودهٔ این فاز است)"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+release:
+  stage: release
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t $IMAGE_TAG .
+    - echo "انتشار با تگ $CI_COMMIT_TAG"
+  rules:
+    - if: '$CI_COMMIT_TAG'
